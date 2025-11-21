@@ -21,7 +21,7 @@
     position: absolute;
     color: #ea80b0;
     font-family: 'Arial', sans-serif;
-    font-size: clamp(24px, 8vw, 48px);
+    /* 初始字体大小由JS动态设置 */
     font-weight: bold;
     text-shadow: 0 0 10px rgba(234, 128, 176, 0.8);
     z-index: 10;
@@ -43,14 +43,14 @@
       effect: -0.75,
       size: 25,
     },
-    scale: 0.6,
-    // 爱心的几何中心（固定值，由爱心公式决定）
+    scale: 0.6, // 爱心缩放比例
+    baseFontSize: 48, // 基础字体大小（scale=1时的大小）
     heartGeoCenter: {
       x: 0,
-      y: 0 // 爱心公式的中心Y值
+      y: 0
     },
     textOffset: {
-      y: -20 // 相对爱心中心的上移量
+      y: -20
     }
   };
 
@@ -172,23 +172,27 @@
         particleRate = settings.particles.length / settings.particles.duration,
         time,
         textElement = document.getElementById('heart-text'),
-        // 窗口中心（爱心的显示中心）
         windowCenter = {
           x: window.innerWidth / 2,
           y: window.innerHeight / 2
         };
     
-    // 计算文本相对于爱心中心的位置
-    function updateTextPosition() {
+    // 更新文本位置和大小
+    function updateText() {
+      // 计算基于爱心缩放比例的字体大小
+      var fontSize = settings.baseFontSize * settings.scale;
+      // 确保移动端有最小字体
+      fontSize = Math.max(fontSize, 24);
+      textElement.style.fontSize = fontSize + 'px';
+      
+      // 计算位置
       var textRect = textElement.getBoundingClientRect();
-      // 爱心的最终显示中心 = 窗口中心 + 爱心几何中心
       var heartFinalCenter = {
         x: windowCenter.x + settings.heartGeoCenter.x * settings.scale,
         y: windowCenter.y - settings.heartGeoCenter.y * settings.scale
       };
-      // 文本位置 = 爱心显示中心 - 文本自身一半尺寸 + 偏移量
       textElement.style.left = (heartFinalCenter.x - textRect.width / 2) + 'px';
-      textElement.style.top = (heartFinalCenter.y - textRect.height / 2 + settings.textOffset.y) + 'px';
+      textElement.style.top = (heartFinalCenter.y - textRect.height / 2 + settings.textOffset.y * settings.scale) + 'px';
     }
 
     function pointOnHeart(t) {
@@ -250,7 +254,7 @@
       particles.update(deltaTime);
       particles.draw(context, image);
       
-      updateTextPosition();
+      updateText();
     }
     
     function onResize() {
@@ -262,13 +266,13 @@
       windowCenter.x = window.innerWidth / 2;
       windowCenter.y = window.innerHeight / 2;
       
-      updateTextPosition();
+      updateText();
     }
     
     window.addEventListener('resize', onResize);
     
-    // 初始化文本位置
-    updateTextPosition();
+    // 初始化文本
+    updateText();
     
     setTimeout(function() {
       onResize();
