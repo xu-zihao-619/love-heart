@@ -19,9 +19,6 @@ canvas {
 }
 #heart-text {
   position: absolute;
-  top: 40%; /* 直接用固定百分比更稳定 */
-  left: 50%;
-  transform: translateX(-50%);
   color: #ea80b0;
   font-family: 'Arial', sans-serif;
   font-size: clamp(24px, 8vw, 48px);
@@ -29,6 +26,7 @@ canvas {
   text-shadow: 0 0 10px rgba(234, 128, 176, 0.8);
   z-index: 10;
   pointer-events: none;
+  user-select: none;
 }
   </style>
  </HEAD>
@@ -45,7 +43,14 @@ canvas {
       effect: -0.75,
       size:      25,
     },
-    scale: 0.6, /* 缩小比例更保守 */
+    scale: 0.6,
+    heartCenter: {
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2
+    },
+    textOffset: {
+      y: -30 // 文字向上偏移量（负值上移，正值下移）
+    }
   };
 
   (function(){var b=0;var c=["ms","moz","webkit","o"];for(var a=0;a<c.length&&!window.requestAnimationFrame;++a){window.requestAnimationFrame=window[c[a]+"RequestAnimationFrame"];window.cancelAnimationFrame=window[c[a]+"CancelAnimationFrame"]||window[c[a]+"CancelRequestAnimationFrame"]}if(!window.requestAnimationFrame){window.requestAnimationFrame=function(h,e){var d=new Date().getTime();var f=Math.max(0,16-(d-b));var g=window.setTimeout(function(){h(d+f)},f);b=d+f;return g}}if(!window.cancelAnimationFrame){window.cancelAnimationFrame=function(d){clearTimeout(d)}}}());
@@ -164,8 +169,16 @@ canvas {
     var context = canvas.getContext('2d'),
         particles = new ParticlePool(settings.particles.length),
         particleRate = settings.particles.length / settings.particles.duration,
-        time;
-  
+        time,
+        textElement = document.getElementById('heart-text');
+    
+    // 更新文本位置的函数（加入偏移量）
+    function updateTextPosition() {
+      var textRect = textElement.getBoundingClientRect();
+      // 基于爱心中心定位并加上偏移量
+      textElement.style.left = (settings.heartCenter.x - textRect.width / 2) + 'px';
+      textElement.style.top = (settings.heartCenter.y - textRect.height / 2 + settings.textOffset.y) + 'px';
+    }
 
     function pointOnHeart(t) {
       var scale = settings.scale;
@@ -208,21 +221,25 @@ canvas {
       var newTime   = new Date().getTime() / 1000,
           deltaTime = newTime - (time || newTime);
       time = newTime;
+      
       context.clearRect(0, 0, canvas.width, canvas.height);
+      
       var amount = particleRate * deltaTime;
       for (var i = 0; i < amount; i++) {
         var pos = pointOnHeart(Math.PI - 2 * Math.PI * Math.random());
         var dir = pos.clone().length(settings.particles.velocity);
-        // 强制居中：基于窗口中心计算位置
         particles.add(
-          window.innerWidth/2 + pos.x,
-          window.innerHeight/2 - pos.y,
+          settings.heartCenter.x + pos.x,
+          settings.heartCenter.y - pos.y,
           dir.x, 
           -dir.y
         );
       }
+      
       particles.update(deltaTime);
       particles.draw(context, image);
+      
+      updateTextPosition();
     }
     
     function onResize() {
@@ -230,9 +247,17 @@ canvas {
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       context.scale(dpr, dpr);
+      
+      settings.heartCenter.x = window.innerWidth / 2;
+      settings.heartCenter.y = window.innerHeight / 2;
+      
+      updateTextPosition();
     }
     
     window.addEventListener('resize', onResize);
+    
+    updateTextPosition();
+    
     setTimeout(function() {
       onResize();
       render();
