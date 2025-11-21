@@ -1,33 +1,33 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <HTML>
  <HEAD>
-  <TITLE> New Document </TITLE>
+  <TITLE>爱心文字居中</TITLE>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
   html, body {
-  height: 100%;
-  padding: 0;
-  margin: 0;
-  background: #000;
-  overflow: hidden;
-}
-canvas {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-#heart-text {
-  position: absolute;
-  color: #ea80b0;
-  font-family: 'Arial', sans-serif;
-  font-size: clamp(24px, 8vw, 48px);
-  font-weight: bold;
-  text-shadow: 0 0 10px rgba(234, 128, 176, 0.8);
-  z-index: 10;
-  pointer-events: none;
-  user-select: none;
-}
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background: #000;
+    overflow: hidden;
+  }
+  canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #heart-text {
+    position: absolute;
+    color: #ea80b0;
+    font-family: 'Arial', sans-serif;
+    font-size: clamp(24px, 8vw, 48px);
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(234, 128, 176, 0.8);
+    z-index: 10;
+    pointer-events: none;
+    user-select: none;
+  }
   </style>
  </HEAD>
 
@@ -37,19 +37,20 @@ canvas {
   <script>
   var settings = {
     particles: {
-      length:   400,
-      duration:   2,
+      length: 400,
+      duration: 2,
       velocity: 80,
       effect: -0.75,
-      size:      25,
+      size: 25,
     },
     scale: 0.6,
-    heartCenter: {
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2
+    // 爱心的几何中心（固定值，由爱心公式决定）
+    heartGeoCenter: {
+      x: 0,
+      y: 0 // 爱心公式的中心Y值
     },
     textOffset: {
-      y: -30 // 文字向上偏移量（负值上移，正值下移）
+      y: -20 // 相对爱心中心的上移量
     }
   };
 
@@ -170,14 +171,24 @@ canvas {
         particles = new ParticlePool(settings.particles.length),
         particleRate = settings.particles.length / settings.particles.duration,
         time,
-        textElement = document.getElementById('heart-text');
+        textElement = document.getElementById('heart-text'),
+        // 窗口中心（爱心的显示中心）
+        windowCenter = {
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2
+        };
     
-    // 更新文本位置的函数（加入偏移量）
+    // 计算文本相对于爱心中心的位置
     function updateTextPosition() {
       var textRect = textElement.getBoundingClientRect();
-      // 基于爱心中心定位并加上偏移量
-      textElement.style.left = (settings.heartCenter.x - textRect.width / 2) + 'px';
-      textElement.style.top = (settings.heartCenter.y - textRect.height / 2 + settings.textOffset.y) + 'px';
+      // 爱心的最终显示中心 = 窗口中心 + 爱心几何中心
+      var heartFinalCenter = {
+        x: windowCenter.x + settings.heartGeoCenter.x * settings.scale,
+        y: windowCenter.y - settings.heartGeoCenter.y * settings.scale
+      };
+      // 文本位置 = 爱心显示中心 - 文本自身一半尺寸 + 偏移量
+      textElement.style.left = (heartFinalCenter.x - textRect.width / 2) + 'px';
+      textElement.style.top = (heartFinalCenter.y - textRect.height / 2 + settings.textOffset.y) + 'px';
     }
 
     function pointOnHeart(t) {
@@ -195,8 +206,8 @@ canvas {
       canvas.height = settings.particles.size;
       function to(t) {
         var point = pointOnHeart(t);
-        point.x = settings.particles.size / 2 + point.x * settings.particles.size / (350);
-        point.y = settings.particles.size / 2 - point.y * settings.particles.size / (350);
+        point.x = settings.particles.size / 2 + point.x * settings.particles.size / 350;
+        point.y = settings.particles.size / 2 - point.y * settings.particles.size / 350;
         return point;
       }
       context.beginPath();
@@ -229,8 +240,8 @@ canvas {
         var pos = pointOnHeart(Math.PI - 2 * Math.PI * Math.random());
         var dir = pos.clone().length(settings.particles.velocity);
         particles.add(
-          settings.heartCenter.x + pos.x,
-          settings.heartCenter.y - pos.y,
+          windowCenter.x + pos.x,
+          windowCenter.y - pos.y,
           dir.x, 
           -dir.y
         );
@@ -248,14 +259,15 @@ canvas {
       canvas.height = window.innerHeight * dpr;
       context.scale(dpr, dpr);
       
-      settings.heartCenter.x = window.innerWidth / 2;
-      settings.heartCenter.y = window.innerHeight / 2;
+      windowCenter.x = window.innerWidth / 2;
+      windowCenter.y = window.innerHeight / 2;
       
       updateTextPosition();
     }
     
     window.addEventListener('resize', onResize);
     
+    // 初始化文本位置
     updateTextPosition();
     
     setTimeout(function() {
